@@ -1,0 +1,31 @@
+# Git ignore for Java / Maven / Spring Boot project
+
+# ---- Compiled output ----
+target/
+*.class
+*.jar
+*.war
+
+# ---- Maven wrapper cache ----
+.mvn/repository/
+
+# ---- IDE files ----
+.idea/
+*.iml
+*.iws
+.eclipse/
+.settings/
+.classpath
+.project
+*.vscode/
+
+# ---- OS files ----
+.DS_Store
+Thumbs.db
+
+# ---- Spring Boot devtools restart trigger ----
+.reloadtrigger
+
+# ---- Environment / secrets ----
+# If you ever extract secrets to a .env file, don't commit it
+.env

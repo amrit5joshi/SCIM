@@ -1,0 +1,32 @@
+# docker-compose.yml
+#
+# Spins up a single MySQL 8 container so the Spring app can connect locally.
+# Run with: docker-compose up -d
+# Stop with: docker-compose down   (add -v to also delete the data volume)
+#
+# The Spring Boot app itself is NOT in this compose file — you run it from
+# your IDE or with ./mvnw spring-boot:run. This keeps the dev loop fast.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: scim-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword      # root password (not used by the app)
+      MYSQL_DATABASE: scimdb                 # database the app connects to
+      MYSQL_USER: scim                       # matches spring.datasource.username
+      MYSQL_PASSWORD: scim123                # matches spring.datasource.password
+    ports:
+      - "3306:3306"                          # expose to localhost so the app can reach it
+    volumes:
+      - scim-mysql-data:/var/lib/mysql       # named volume = data persists across restarts
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "scim", "-pscim123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  scim-mysql-data:
+    driver: local
