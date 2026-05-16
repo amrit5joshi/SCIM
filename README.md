@@ -1,6 +1,6 @@
 # SCIM 2.0 User Provisioning Service
 
-A production-style SCIM 2.0 user provisioning API built with Java 17 and Spring Boot 3, backed by MySQL — designed as a portfolio/interview project demonstrating real-world enterprise integration patterns.
+A SCIM 2.0 user provisioning API built with Java 17 and Spring Boot 3, backed by MySQL. Designed for integration with enterprise identity providers such as Okta and Microsoft Entra ID.
 
 ---
 
@@ -204,13 +204,13 @@ Keeping them separate (with `UserMapper` translating between them) means:
 - An API change (e.g. adding a new SCIM field) doesn't force a DB migration.
 - Each class has a single responsibility: entities know about JPA, DTOs know about JSON.
 
-This is the classic **DTO pattern** — a standard architecture question in interviews.
+This is the standard **DTO pattern** for keeping API contracts decoupled from the persistence model.
 
 ### 2. How filtering is parsed (and why only `userName eq` is supported)
 
 `ScimFilterParser` uses a single compiled `Pattern` that matches exactly `userName eq "value"`. Anything else throws an `InvalidFilterException` (→ 400).
 
-The SCIM filter grammar is actually a full expression language (RFC 7644 §3.4.2.2) supporting AND, OR, NOT, and nested paths. A production implementation would use an ANTLR grammar or the `scim2-sdk` library. For a portfolio project, the regex approach is honest — it does exactly what it claims, and the 400 error for unsupported filters is SCIM-spec compliant.
+The SCIM filter grammar is actually a full expression language (RFC 7644 §3.4.2.2) supporting AND, OR, NOT, and nested paths. A production implementation would use an ANTLR grammar or the `scim2-sdk` library. The regex approach does exactly what it claims; unsupported filter expressions return a SCIM-compliant 400 error.
 
 ### 3. How errors are mapped to the SCIM error schema
 

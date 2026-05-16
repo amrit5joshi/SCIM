@@ -23,14 +23,9 @@ import java.util.stream.Collectors;
 /**
  * Business-logic layer for SCIM User operations.
  * <p>
- * This class sits between the controller (HTTP concerns) and the repository
- * (persistence concerns). It is responsible for: validating business rules
- * (e.g. uniqueness), delegating to the mapper, managing transactions, and
- * logging meaningful audit events.
- * <p>
- * {@code @RequiredArgsConstructor} generates a constructor for the two
- * {@code final} fields — this is constructor injection, the Spring-recommended
- * style (no {@code @Autowired} on fields).
+ * Owns transaction boundaries, uniqueness checks, and delegation to the
+ * mapper and repository. HTTP concerns stay in the controller; persistence
+ * concerns stay in the repository.
  */
 @Slf4j
 @Service
@@ -42,16 +37,8 @@ public class UserService {
     private final ScimFilterParser filterParser;
 
     /**
-     * Creates a new SCIM User.
-     * <p>
-     * Checks for duplicate {@code userName} at the application level before
-     * hitting the DB, so we can return a clean SCIM 409 error instead of a
-     * raw {@code DataIntegrityViolationException}.
-     *
-     * @param dto     the validated inbound ScimUser body
-     * @param baseUrl request base URL used to build the meta.location field
-     * @return the persisted user as a ScimUser DTO
-     * @throws DuplicateUserNameException if userName is already taken
+     * Creates a new SCIM User, checking for duplicate {@code userName} at
+     * the application layer to return a 409 rather than a raw DB constraint error.
      */
     @Transactional
     public ScimUser createUser(ScimUser dto, String baseUrl) {
@@ -67,14 +54,7 @@ public class UserService {
         return userMapper.toDto(saved, baseUrl);
     }
 
-    /**
-     * Retrieves a single user by their server-generated UUID.
-     *
-     * @param id      the user's UUID
-     * @param baseUrl request base URL for meta.location
-     * @return the user as a ScimUser DTO
-     * @throws UserNotFoundException if no user exists with that id
-     */
+    /** Retrieves a single user by server-generated UUID. */
     @Transactional(readOnly = true)
     public ScimUser getUser(String id, String baseUrl) {
         log.debug("Fetching user id={}", id);
@@ -84,23 +64,13 @@ public class UserService {
 
     /**
      * Lists users with optional filtering and pagination.
-     * <p>
-     * Pagination is 1-based (SCIM spec §3.4.2.4): {@code startIndex=1} means
-     * the first record. We convert to 0-based for Spring Data's {@link Pageable}.
-     *
-     * @param filter     raw SCIM filter string (may be null/blank)
-     * @param startIndex 1-based start index (default 1)
-     * @param count      page size (default 10, max 100)
-     * @param baseUrl    request base URL for meta.location
-     * @return a ScimListResponse envelope with pagination metadata
+     * SCIM {@code startIndex} is 1-based; converted to 0-based Spring Data page number.
      */
     @Transactional(readOnly = true)
     public ScimListResponse listUsers(String filter, int startIndex, int count, String baseUrl) {
         log.debug("Listing users filter='{}' startIndex={} count={}", filter, startIndex, count);
 
-        // Clamp count to valid range
         int clampedCount = Math.min(Math.max(count, 1), 100);
-        // Convert 1-based SCIM startIndex to 0-based Spring Data page number
         int pageNumber = (startIndex - 1) / clampedCount;
 
         Pageable pageable = PageRequest.of(pageNumber, clampedCount);
@@ -124,18 +94,8 @@ public class UserService {
     }
 
     /**
-     * Replaces all mutable fields of an existing user (full PUT replacement).
-     * <p>
-     * Per SCIM RFC 7644 §3.5.1, PUT replaces the resource entirely — any
-     * field not included in the body is cleared. The {@code id}, {@code created},
-     * and schema fields are preserved by the mapper.
-     *
-     * @param id      the user's UUID
-     * @param dto     the replacement body
-     * @param baseUrl request base URL for meta.location
-     * @return the updated user as a ScimUser DTO
-     * @throws UserNotFoundException      if no user exists with that id
-     * @throws DuplicateUserNameException if the new userName is already used by another user
+     * Full replacement of a user resource (RFC 7644 §3.5.1).
+     * Fields absent from the body are cleared; {@code id} and {@code created} are preserved.
      */
     @Transactional
     public ScimUser replaceUser(String id, ScimUser dto, String baseUrl) {
@@ -156,15 +116,7 @@ public class UserService {
         return userMapper.toDto(saved, baseUrl);
     }
 
-    /**
-     * Hard-deletes a user by their UUID.
-     * <p>
-     * CascadeType.ALL on the emails relationship means Hibernate automatically
-     * deletes the related {@code user_emails} rows too.
-     *
-     * @param id the user's UUID
-     * @throws UserNotFoundException if no user exists with that id
-     */
+    /** Hard-deletes a user; cascade removes child email rows automatically. */
     @Transactional
     public void deleteUser(String id) {
         log.info("Deleting user id={}", id);

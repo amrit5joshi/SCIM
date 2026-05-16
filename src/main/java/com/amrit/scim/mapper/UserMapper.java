@@ -12,29 +12,18 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Converts between the persistence model ({@link UserEntity} / {@link EmailEntity})
+ * Converts between the JPA persistence model ({@link UserEntity} / {@link EmailEntity})
  * and the SCIM wire format ({@link ScimUser}).
  * <p>
- * Keeping mapping logic here — rather than inside the entity or DTO — follows
- * the Single-Responsibility Principle: entities know about persistence,
- * DTOs know about JSON, and the mapper knows about the translation between them.
- * This is the key design decision to explain in an interview.
- * <p>
- * We use a plain {@code @Component} (not MapStruct) so that every field
- * mapping is explicit and readable — important for a learning project.
+ * Keeping mapping logic here prevents entities and DTOs from depending on each
+ * other. Uses explicit field mapping rather than MapStruct for full transparency.
  */
 @Component
 public class UserMapper {
 
     /**
-     * Converts an inbound {@link ScimUser} request body into a new
-     * {@link UserEntity} ready to be persisted for the first time.
-     * <p>
-     * The server assigns the UUID and timestamps — the client must never
-     * control these values (SCIM spec §3.1).
-     *
-     * @param dto the validated inbound SCIM User
-     * @return a fully populated, unsaved UserEntity
+     * Converts a validated inbound {@link ScimUser} to a new {@link UserEntity}.
+     * The server assigns the UUID and timestamps (SCIM spec §3.1).
      */
     public UserEntity toNewEntity(ScimUser dto) {
         Instant now = Instant.now();
@@ -59,13 +48,8 @@ public class UserMapper {
     }
 
     /**
-     * Applies the fields from an inbound PUT request body onto an existing
-     * {@link UserEntity}.  The {@code id}, {@code created} timestamps are
-     * preserved; {@code lastModified} is refreshed to now.
-     *
-     * @param entity the existing entity loaded from the DB
-     * @param dto    the inbound replacement body
-     * @return the same entity instance with updated fields (mutated in-place)
+     * Applies PUT body fields onto an existing entity in-place.
+     * Preserves {@code id} and {@code created}; refreshes {@code lastModified}.
      */
     public UserEntity applyUpdate(UserEntity entity, ScimUser dto) {
         entity.setUserName(dto.getUserName());
@@ -83,7 +67,6 @@ public class UserMapper {
             entity.setFormattedName(null);
         }
 
-        // Replace email list entirely — orphanRemoval on the entity handles deletion
         entity.getEmails().clear();
         List<EmailEntity> newEmails = mapEmailDtosToEntities(dto.getEmails(), entity);
         entity.getEmails().addAll(newEmails);
@@ -92,14 +75,8 @@ public class UserMapper {
     }
 
     /**
-     * Converts a persisted {@link UserEntity} to a {@link ScimUser} DTO for
-     * the response body, populating the {@code meta.location} field with the
-     * canonical URL of this resource.
-     *
-     * @param entity      the entity loaded from the DB
-     * @param baseUrl     the scheme+host+port of the current request,
-     *                    e.g. {@code http://localhost:8080}
-     * @return a fully populated ScimUser ready to serialise as JSON
+     * Converts a persisted {@link UserEntity} to a response {@link ScimUser},
+     * building the absolute {@code meta.location} from the request base URL.
      */
     public ScimUser toDto(UserEntity entity, String baseUrl) {
         ScimName name = ScimName.builder()

@@ -12,14 +12,9 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Configures the OpenAPI 3.0 specification exposed by springdoc-openapi.
  * <p>
- * This bean customises the metadata shown in Swagger UI (title, description,
- * contact) and registers the {@code bearerAuth} security scheme so that
- * Swagger UI shows an "Authorize" button where you can paste the bearer token
- * and test endpoints without writing curl commands.
- * <p>
- * Interview talking-point: the {@code @SecurityRequirement(name = "bearerAuth")}
- * annotation on {@link UserController} references this scheme by name —
- * the names must match exactly or Swagger UI won't show the lock icon.
+ * Configures Swagger UI metadata and registers the {@code bearerAuth} security
+ * scheme. The name {@code "bearerAuth"} must match the value in
+ * {@code @SecurityRequirement} on {@link UserController} exactly.
  */
 @Configuration
 public class OpenApiConfig {

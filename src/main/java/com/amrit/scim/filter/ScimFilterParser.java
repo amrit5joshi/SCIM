@@ -10,21 +10,15 @@ import java.util.regex.Pattern;
 /**
  * Parses the SCIM {@code filter} query parameter (RFC 7644 §3.4.2.2).
  * <p>
- * We intentionally support only one expression: {@code userName eq "value"}.
- * If the client sends anything more complex (AND, OR, other attributes) we
- * reject it with a 400 SCIM error.  This keeps the implementation simple
- * and defensible: in an interview you can explain exactly what the regex
- * matches and why anything else is out of scope for v1.
- * <p>
- * Interview talking-point: a production service would use an ANTLR grammar
- * or a library like {@code scim2-sdk} to parse the full SCIM filter grammar.
+ * Supports {@code userName eq "value"} only. Any other expression is rejected
+ * with a 400 SCIM error. A full implementation would use an ANTLR grammar
+ * or the {@code scim2-sdk} library to handle the complete filter grammar.
  */
 @Component
 public class ScimFilterParser {
 
     /**
-     * Matches: {@code userName eq "someValue"} (case-insensitive on the
-     * attribute name and operator, value may contain any non-quote chars).
+     * Matches {@code userName eq "someValue"}, case-insensitive on attribute name and operator.
      * Group 1 captures the value inside the quotes.
      */
     private static final Pattern USERNAME_EQ_PATTERN =

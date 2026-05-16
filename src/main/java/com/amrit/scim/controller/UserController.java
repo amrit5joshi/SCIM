@@ -19,13 +19,9 @@ import org.springframework.web.bind.annotation.*;
 /**
  * REST controller for SCIM 2.0 User endpoints (RFC 7644 §3.3–3.6).
  * <p>
- * Handles the five operations in scope: Create, Read, List, Replace, Delete.
- * All endpoints live under {@code /scim/v2/Users} and produce/consume
- * {@code application/scim+json} (we also accept {@code application/json}
- * for client convenience).
- * <p>
- * This class contains NO business logic — it only translates HTTP
- * to/from service calls. Error handling is delegated entirely to
+ * Exposes five operations under {@code /scim/v2/Users}: Create, Read, List,
+ * Replace, and Delete. Accepts both {@code application/json} and
+ * {@code application/scim+json}. Error handling is centralised in
  * {@link com.amrit.scim.exception.ScimExceptionHandler}.
  */
 @Slf4j
@@ -42,11 +38,7 @@ public class UserController {
     // POST /scim/v2/Users  — Create
     // -------------------------------------------------------------------------
 
-    /**
-     * Creates a new SCIM User resource.
-     * Returns 201 Created with the full resource body (including server-assigned
-     * {@code id} and {@code meta}) per RFC 7644 §3.3.
-     */
+    /** Creates a user; returns 201 with server-assigned {@code id} and {@code meta} (RFC 7644 §3.3). */
     @Operation(summary = "Create a user", description = "Creates a new SCIM User. Returns 201 with the created resource.")
     @PostMapping(
             consumes = {MediaType.APPLICATION_JSON_VALUE, "application/scim+json"},
@@ -65,10 +57,7 @@ public class UserController {
     // GET /scim/v2/Users/{id}  — Read
     // -------------------------------------------------------------------------
 
-    /**
-     * Returns a single SCIM User by their server-generated UUID.
-     * Returns 404 SCIM error if not found.
-     */
+    /** Returns a single user by UUID, or a 404 SCIM error if not found. */
     @Operation(summary = "Get a user by ID", description = "Returns a single User resource by UUID.")
     @GetMapping(
             value = "/{id}",
@@ -88,15 +77,9 @@ public class UserController {
     // -------------------------------------------------------------------------
 
     /**
-     * Returns a paginated list of SCIM Users, optionally filtered by
-     * {@code userName eq "value"}.
-     * <p>
-     * Query parameters follow RFC 7644 §3.4.2.4:
-     * <ul>
-     *   <li>{@code filter} — SCIM filter expression (only {@code userName eq} supported)</li>
-     *   <li>{@code startIndex} — 1-based index of first result (default 1)</li>
-     *   <li>{@code count} — max results to return (default 10, capped at 100)</li>
-     * </ul>
+     * Returns a paginated {@code ListResponse} (RFC 7644 §3.4.2).
+     * Supports {@code filter=userName eq "value"} and {@code filter=externalId eq "value"}.
+     * {@code startIndex} is 1-based; {@code count} is capped at 100.
      */
     @Operation(summary = "List users", description = "Returns a paginated ListResponse. Supports filter=userName eq \"value\".")
     @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, "application/scim+json"})
@@ -121,11 +104,7 @@ public class UserController {
     // PUT /scim/v2/Users/{id}  — Replace
     // -------------------------------------------------------------------------
 
-    /**
-     * Replaces all mutable fields of an existing SCIM User (full replacement).
-     * Per RFC 7644 §3.5.1, any attribute not in the body is cleared.
-     * Returns 200 with the updated resource.
-     */
+    /** Full replacement of a user resource (RFC 7644 §3.5.1). Returns 200 with updated resource. */
     @Operation(summary = "Replace a user", description = "Full PUT replacement of an existing User resource.")
     @PutMapping(
             value = "/{id}",
@@ -146,10 +125,7 @@ public class UserController {
     // DELETE /scim/v2/Users/{id}  — Delete
     // -------------------------------------------------------------------------
 
-    /**
-     * Hard-deletes a SCIM User by UUID.
-     * Returns 204 No Content on success per RFC 7644 §3.6.
-     */
+    /** Hard-deletes a user by UUID; returns 204 No Content (RFC 7644 §3.6). */
     @Operation(summary = "Delete a user", description = "Hard-deletes a User resource. Returns 204 No Content.")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
@@ -161,16 +137,11 @@ public class UserController {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Extracts the scheme, host, and port from the current HTTP request so the
-     * mapper can build the absolute {@code meta.location} URL.
-     * Example output: {@code http://localhost:8080}
-     */
+    /** Builds the scheme+host+port prefix used for {@code meta.location}, e.g. {@code http://localhost:8080}. */
     private String extractBaseUrl(HttpServletRequest request) {
         String scheme = request.getScheme();
         String host = request.getServerName();
         int port = request.getServerPort();
-        // Omit the port for standard 80/443 to keep URLs clean
         if ((scheme.equals("http") && port == 80) ||
             (scheme.equals("https") && port == 443)) {
             return scheme + "://" + host;

@@ -27,15 +27,12 @@ import java.util.List;
 /**
  * Spring Security configuration for the SCIM service.
  * <p>
- * Strategy: stateless bearer-token authentication. Every request to
- * {@code /scim/v2/**} must carry {@code Authorization: Bearer <token>}.
- * We implement this as a simple {@link OncePerRequestFilter} that compares
- * the token to the static value in {@code application.properties}.
+ * Stateless bearer-token authentication: every request to {@code /scim/v2/**}
+ * must carry {@code Authorization: Bearer <token>}. The token is validated
+ * against the static value in {@code application.properties}.
  * <p>
- * Interview talking-point: in production you'd validate a JWT (using
- * {@code spring-boot-starter-oauth2-resource-server}) rather than a static
- * token. The filter approach here is intentionally minimal and self-contained
- * so there are no external auth-server dependencies for local dev.
+ * For production use, swap the static token for JWT validation via
+ * {@code spring-boot-starter-oauth2-resource-server} and a JWKS endpoint.
  */
 @Slf4j
 @Configuration

@@ -11,15 +11,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 /**
- * Centralised exception handler for all SCIM endpoints.
+ * Centralised exception → SCIM error response mapping.
  * <p>
- * {@code @RestControllerAdvice} intercepts exceptions thrown anywhere in the
- * controller layer (and beyond) and converts them to properly shaped SCIM
- * error responses.  Without this, Spring would return its default
- * {@code /error} HTML page, which SCIM clients cannot parse.
- * <p>
- * Interview talking-point: centralising here means controllers stay clean —
- * they never contain try/catch blocks or error-building logic.
+ * Intercepts all exceptions and converts them to the SCIM error schema
+ * (RFC 7644 §3.12) so that clients always receive a parseable JSON error
+ * instead of Spring's default HTML error page.
  */
 @Slf4j
 @RestControllerAdvice
