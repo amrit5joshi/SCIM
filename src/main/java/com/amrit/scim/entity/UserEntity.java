@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.List;
@@ -58,7 +59,12 @@ public class UserEntity {
     @Column(name = "last_modified", nullable = false)
     private Instant lastModified;
 
-    /** Cascade ALL + orphanRemoval so child email rows are managed with the parent. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    /**
+     * Lazy-loaded with @BatchSize to avoid N+1 on list queries.
+     * Hibernate issues one batched SELECT for up to 25 users rather than one per user.
+     * Single-user reads use @EntityGraph in the repository for a JOIN FETCH instead.
+     */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 25)
     private List<EmailEntity> emails;
 }
