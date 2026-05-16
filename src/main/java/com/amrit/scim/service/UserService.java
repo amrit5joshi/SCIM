@@ -3,7 +3,9 @@ package com.amrit.scim.service;
 import com.amrit.scim.dto.ScimListResponse;
 import com.amrit.scim.dto.ScimUser;
 import com.amrit.scim.entity.UserEntity;
+import com.amrit.scim.dto.ScimEmail;
 import com.amrit.scim.exception.DuplicateUserNameException;
+import com.amrit.scim.exception.ScimValidationException;
 import com.amrit.scim.exception.UserNotFoundException;
 import com.amrit.scim.filter.FilterCriteria;
 import com.amrit.scim.filter.ScimFilterParser;
@@ -20,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Business-logic layer for SCIM User operations.
@@ -44,6 +48,7 @@ public class UserService {
     @Transactional
     public ScimUser createUser(ScimUser dto, String baseUrl) {
         log.info("Creating user with userName={}", dto.getUserName());
+        validateEmails(dto.getEmails());
 
         if (userRepository.findByUserName(dto.getUserName()).isPresent()) {
             throw new DuplicateUserNameException(dto.getUserName());
@@ -106,6 +111,7 @@ public class UserService {
     @Transactional
     public ScimUser replaceUser(String id, ScimUser dto, String baseUrl) {
         log.info("Replacing user id={} with userName={}", id, dto.getUserName());
+        validateEmails(dto.getEmails());
 
         UserEntity existing = findOrThrow(id);
 
@@ -138,5 +144,15 @@ public class UserService {
     private UserEntity findOrThrow(String id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    /** SCIM allows at most one email per user to carry primary=true (RFC 7643 §2.4). */
+    private void validateEmails(List<ScimEmail> emails) {
+        if (emails == null) return;
+        long primaryCount = emails.stream().filter(ScimEmail::isPrimary).count();
+        if (primaryCount > 1) {
+            throw new ScimValidationException(
+                    "At most one email address may have primary=true; found " + primaryCount + ".");
+        }
     }
 }

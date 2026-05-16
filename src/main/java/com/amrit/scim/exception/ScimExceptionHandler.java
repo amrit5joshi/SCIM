@@ -51,6 +51,21 @@ public class ScimExceptionHandler {
     }
 
     /**
+     * 400 — business-rule violation (e.g. multiple primary emails); {@code scimType = "invalidValue"}.
+     */
+    @ExceptionHandler(ScimValidationException.class)
+    public ResponseEntity<ScimError> handleValidationRule(ScimValidationException ex) {
+        log.debug("SCIM validation failure: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ScimError.builder()
+                        .status("400")
+                        .scimType("invalidValue")
+                        .detail(ex.getMessage())
+                        .build());
+    }
+
+    /**
      * 400 — unsupported filter expression; {@code scimType = "invalidFilter"}.
      */
     @ExceptionHandler(InvalidFilterException.class)

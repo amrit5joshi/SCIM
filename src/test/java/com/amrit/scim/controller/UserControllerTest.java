@@ -145,6 +145,25 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("POST /Users — 400 when multiple emails have primary=true")
+    void createUser_multiplePrimaryEmails_returns400() throws Exception {
+        ScimUser user = buildUser("multi-primary@example.com");
+        user.setEmails(List.of(
+                ScimEmail.builder().value("a@example.com").type("work").primary(true).build(),
+                ScimEmail.builder().value("b@example.com").type("home").primary(true).build()
+        ));
+        String body = objectMapper.writeValueAsString(user);
+
+        mockMvc.perform(post(BASE_URL)
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.scimType").value("invalidValue"))
+                .andExpect(jsonPath("$.detail").value(containsString("primary=true")));
+    }
+
+    @Test
     @DisplayName("POST /Users — 400 when userName is blank")
     void createUser_missingUserName_returns400() throws Exception {
         ScimUser badUser = ScimUser.builder().userName("").build();
