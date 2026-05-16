@@ -33,4 +33,7 @@ public interface UserRepository extends JpaRepository<UserEntity, String> {
      * {@code userName} is unique so the page contains at most one result.
      */
     Page<UserEntity> findByUserName(String userName, Pageable pageable);
+
+    /** Exact match for the SCIM {@code externalId eq "value"} filter. */
+    Page<UserEntity> findByExternalId(String externalId, Pageable pageable);
 }

@@ -5,6 +5,7 @@ import com.amrit.scim.dto.ScimUser;
 import com.amrit.scim.entity.UserEntity;
 import com.amrit.scim.exception.DuplicateUserNameException;
 import com.amrit.scim.exception.UserNotFoundException;
+import com.amrit.scim.filter.FilterCriteria;
 import com.amrit.scim.filter.ScimFilterParser;
 import com.amrit.scim.mapper.UserMapper;
 import com.amrit.scim.repository.UserRepository;
@@ -75,11 +76,16 @@ public class UserService {
 
         Pageable pageable = PageRequest.of(pageNumber, clampedCount);
 
-        Optional<String> userNameFilter = filterParser.parseUserNameFilter(filter);
+        Optional<FilterCriteria> criteria = filterParser.parse(filter);
 
-        Page<UserEntity> page = userNameFilter.isPresent()
-                ? userRepository.findByUserName(userNameFilter.get(), pageable)
-                : userRepository.findAll(pageable);
+        Page<UserEntity> page;
+        if (criteria.isEmpty()) {
+            page = userRepository.findAll(pageable);
+        } else if ("username".equals(criteria.get().attribute())) {
+            page = userRepository.findByUserName(criteria.get().value(), pageable);
+        } else {
+            page = userRepository.findByExternalId(criteria.get().value(), pageable);
+        }
 
         List<ScimUser> resources = page.getContent().stream()
                 .map(e -> userMapper.toDto(e, baseUrl))

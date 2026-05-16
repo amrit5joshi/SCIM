@@ -10,41 +10,40 @@ import java.util.regex.Pattern;
 /**
  * Parses the SCIM {@code filter} query parameter (RFC 7644 §3.4.2.2).
  * <p>
- * Supports {@code userName eq "value"} only. Any other expression is rejected
- * with a 400 SCIM error. A full implementation would use an ANTLR grammar
- * or the {@code scim2-sdk} library to handle the complete filter grammar.
+ * Supports {@code userName eq "value"} and {@code externalId eq "value"}.
+ * Any other expression is rejected with a 400 SCIM error. A full
+ * implementation would use an ANTLR grammar or the {@code scim2-sdk} library.
  */
 @Component
 public class ScimFilterParser {
 
     /**
-     * Matches {@code userName eq "someValue"}, case-insensitive on attribute name and operator.
-     * Group 1 captures the value inside the quotes.
+     * Matches {@code <attribute> eq "value"} for the two supported attributes.
+     * Group 1 = attribute name, group 2 = value inside quotes.
      */
-    private static final Pattern USERNAME_EQ_PATTERN =
-            Pattern.compile("^userName\\s+eq\\s+\"([^\"]+)\"$",
+    private static final Pattern EQ_PATTERN =
+            Pattern.compile("^(userName|externalId)\\s+eq\\s+\"([^\"]+)\"$",
                     Pattern.CASE_INSENSITIVE);
 
     /**
-     * Parses the filter string and returns the userName value to match.
+     * Parses the filter string and returns a {@link FilterCriteria} describing
+     * which attribute to match and the exact value.
      *
      * @param filter the raw {@code filter} query-parameter value
-     * @return an {@link Optional} containing the userName, or empty if
-     *         {@code filter} is null/blank (meaning "no filter — list all")
-     * @throws InvalidFilterException if the filter is non-blank but not a
-     *         supported {@code userName eq "..."} expression
+     * @return an {@link Optional} containing the criteria, or empty if filter is null/blank
+     * @throws InvalidFilterException if the filter is non-blank but not supported
      */
-    public Optional<String> parseUserNameFilter(String filter) {
+    public Optional<FilterCriteria> parse(String filter) {
         if (filter == null || filter.isBlank()) {
             return Optional.empty();
         }
 
-        Matcher matcher = USERNAME_EQ_PATTERN.matcher(filter.trim());
+        Matcher matcher = EQ_PATTERN.matcher(filter.trim());
         if (!matcher.matches()) {
             throw new InvalidFilterException(
-                    "Only 'userName eq \"value\"' filters are supported. Got: " + filter);
+                    "Only 'userName eq \"value\"' and 'externalId eq \"value\"' are supported. Got: " + filter);
         }
 
-        return Optional.of(matcher.group(1));
+        return Optional.of(new FilterCriteria(matcher.group(1).toLowerCase(), matcher.group(2)));
     }
 }
