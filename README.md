@@ -58,7 +58,7 @@ docker-compose ps   # should show "healthy" or "Up"
 ```bash
 ./mvnw spring-boot:run
 ```
-Spring Boot will auto-create the `users` and `user_emails` tables on first startup (Hibernate `ddl-auto=update`).
+Flyway will automatically apply `V1__create_users_table.sql` and `V2__create_user_emails_table.sql` on first startup.
 
 > **Note on JDK version:** This project targets Java 17. If you are running IntelliJ IDEA 2026.x (which ships JBR 25), set `JAVA_HOME` to a JDK 17 or 21 installation before using Maven on the command line:
 > ```powershell
@@ -248,7 +248,7 @@ A JSON column (`TEXT` or MySQL's native `JSON`) would be simpler to read/write i
 - **ETags / conditional updates** — `ETag` header + `If-Match` for optimistic concurrency control (RFC 7644 §3.14)
 - **Full filter grammar** — replace the regex parser with an ANTLR-based implementation supporting AND, OR, NOT
 - **JWT authentication** — replace the static token with `spring-boot-starter-oauth2-resource-server` for proper OAuth 2.0 / OIDC
-- **Flyway migrations** — replace `ddl-auto=update` with versioned migration scripts for safe production schema changes
+- **Additional Flyway migrations** — add index on `external_id`, add `version` column for ETags
 - **`/ServiceProviderConfig` + `/Schemas` endpoints** — allow IdPs to discover capabilities at runtime
 - **Soft delete / `active=false`** — rather than hard-deleting, set `active=false` to preserve audit history
 - **Multi-tenancy** — partition users by tenant ID so the same service can host multiple customers
