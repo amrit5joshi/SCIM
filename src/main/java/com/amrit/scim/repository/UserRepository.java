@@ -19,6 +19,9 @@ public interface UserRepository extends JpaRepository<UserEntity, String> {
 
     Page<UserEntity> findAll(Pageable pageable);
 
-    /** Exact case-sensitive match; {@code userName} is unique so the page contains 0 or 1 results. */
-    Page<UserEntity> findByUserNameContainingIgnoreCase(String userName, Pageable pageable);
+    /**
+     * Exact case-sensitive match for the SCIM {@code userName eq "value"} filter.
+     * {@code userName} is unique so the page contains at most one result.
+     */
+    Page<UserEntity> findByUserName(String userName, Pageable pageable);
 }

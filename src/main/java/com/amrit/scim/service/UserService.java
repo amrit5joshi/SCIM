@@ -78,7 +78,7 @@ public class UserService {
         Optional<String> userNameFilter = filterParser.parseUserNameFilter(filter);
 
         Page<UserEntity> page = userNameFilter.isPresent()
-                ? userRepository.findByUserNameContainingIgnoreCase(userNameFilter.get(), pageable)
+                ? userRepository.findByUserName(userNameFilter.get(), pageable)
                 : userRepository.findAll(pageable);
 
         List<ScimUser> resources = page.getContent().stream()
